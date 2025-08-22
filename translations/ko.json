@@ -1,0 +1,49 @@
+{
+  "title": "Run Command",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Run Command 센서 설정",
+        "description": "명령어를 실행하고 결과를 센서로 만듭니다.",
+        "data": {
+          "name": "센서 이름",
+          "command": "실행할 명령어 (Jinja2 템플릿 지원)",
+          "scan_interval": "실행 주기 (초)",
+          "result_type": "결과 형식",
+          "value_template": "값 템플릿 (선택사항)",
+          "attribute_templates": "속성 템플릿 JSON (선택사항)"
+        },
+        "data_description": {
+          "command": "예: echo \"온도: {{ states('sensor.temperature') }}\"",
+          "value_template": "예: {{ value | regex_findall('온도: (\\d+)') | first }}",
+          "attribute_templates": "예: {attribute_example}"
+        }
+      }
+    },
+    "error": {
+      "unknown": "예상치 못한 오류가 발생했습니다"
+    },
+    "abort": {
+      "already_configured": "이미 설정된 센서입니다"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Run Command 옵션",
+        "description": "Run Command 센서 옵션을 설정합니다.",
+        "data": {
+          "scan_interval": "실행 주기 (초)"
+        }
+      }
+    }
+  },
+  "selector": {
+    "result_type": {
+      "options": {
+        "text": "텍스트",
+        "json": "JSON"
+      }
+    }
+  }
+}

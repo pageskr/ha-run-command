@@ -1,0 +1,27 @@
+# .gitignore for Home Assistant custom component
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Home Assistant
+.storage/
+.cloud/
+.HA_VERSION
+
+# OS
+.DS_Store
+Thumbs.db
