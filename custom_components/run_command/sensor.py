@@ -142,8 +142,7 @@ class RunCommandSensor(SensorEntity):
                     _LOGGER.error("속성 템플릿 '%s' 렌더링 오류: %s", attr_name, err)
                     self._attributes[attr_name] = None
             
-            # 원본 값과 JSON 값을 속성에 추가
-            self._attributes["raw_value"] = self._raw_value
+            # JSON 값만 속성에 추가 (raw_value는 제거)
             if self._json_value is not None:
                 self._attributes["json_value"] = self._json_value
                 

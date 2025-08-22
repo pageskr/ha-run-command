@@ -2,10 +2,11 @@
   "domain": "run_command",
   "name": "Run Command",
   "version": "1.0.0",
-  "documentation": "https://github.com/yourusername/ha-run-command",
+  "documentation": "https://github.com/pages-kr/ha-run-command",
+  "issue_tracker": "https://github.com/pages-kr/ha-run-command/issues",
   "requirements": [],
   "dependencies": [],
-  "codeowners": ["@yourusername"],
+  "codeowners": ["@pages-kr"],
   "config_flow": true,
   "iot_class": "local_polling"
 }

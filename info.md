@@ -4,6 +4,8 @@
 
 _웹 UI에서 설정 가능한 command_line 센서를 생성하는 Home Assistant 통합_
 
+**제작자**: Pages in Korea (pages.kr)
+
 ## 설치
 
 ### HACS (권장)

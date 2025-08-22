@@ -12,11 +12,6 @@
           "result_type": "Result format",
           "value_template": "Value template (optional)",
           "attribute_templates": "Attribute templates JSON (optional)"
-        },
-        "data_description": {
-          "command": "Example: echo \"Temperature: {{ states('sensor.temperature') }}\"",
-          "value_template": "Example: {{ value | regex_findall('Temperature: (\\d+)') | first }}",
-          "attribute_templates": "Example: {attribute_example}"
         }
       }
     },
@@ -33,7 +28,12 @@
         "title": "Run Command Options",
         "description": "Configure Run Command sensor options.",
         "data": {
-          "scan_interval": "Update interval (seconds)"
+          "name": "Sensor name",
+          "command": "Command to execute (Jinja2 template supported)",
+          "scan_interval": "Update interval (seconds)",
+          "result_type": "Result format",
+          "value_template": "Value template (optional)",
+          "attribute_templates": "Attribute templates JSON (optional)"
         }
       }
     }
