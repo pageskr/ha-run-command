@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity
@@ -13,6 +13,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import TemplateError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.template import Template
+from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_ATTRIBUTE_TEMPLATES,
@@ -24,6 +25,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     RESULT_TYPE_JSON,
+    RESULT_TYPE_TEXT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -64,11 +66,10 @@ class RunCommandSensor(SensorEntity):
         self._scan_interval = timedelta(
             seconds=config.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         )
-        self._result_type = config.get(CONF_RESULT_TYPE)
+        self._result_type = config.get(CONF_RESULT_TYPE, RESULT_TYPE_TEXT)
         self._state: Any = None
         self._attributes: dict[str, Any] = {}
-        self._raw_value: str | None = None
-        self._json_value: dict | list | None = None
+        self._last_update: datetime | None = None
 
     @property
     def should_poll(self) -> bool:
@@ -104,24 +105,34 @@ class RunCommandSensor(SensorEntity):
                     "명령어 실행 실패 (코드 %s): %s", proc.returncode, stderr.decode()
                 )
                 self._state = None
+                self._attributes["last_error"] = stderr.decode().strip()
+                self._last_update = dt_util.now()
+                self._attributes["last_update"] = self._last_update.isoformat()
                 return
             
-            # 결과 처리
-            self._raw_value = stdout.decode().strip()
-            self._json_value = None
+            # 업데이트 시간 기록
+            self._last_update = dt_util.now()
             
-            # JSON 파싱 시도
-            if self._result_type == RESULT_TYPE_JSON and self._raw_value:
-                try:
-                    self._json_value = json.loads(self._raw_value)
-                except json.JSONDecodeError:
-                    _LOGGER.warning("JSON 파싱 실패: %s", self._raw_value)
+            # 결과 처리
+            raw_result = stdout.decode().strip()
             
             # 템플릿 변수 준비
-            template_vars = {
-                "value": self._raw_value,
-                "json": self._json_value,
-            }
+            template_vars = {}
+            
+            if self._result_type == RESULT_TYPE_JSON:
+                # JSON 형식인 경우
+                try:
+                    json_data = json.loads(raw_result)
+                    template_vars["json"] = json_data
+                    template_vars["value"] = raw_result  # JSON 문자열도 value에 포함
+                except json.JSONDecodeError:
+                    _LOGGER.warning("JSON 파싱 실패, 텍스트로 처리: %s", raw_result)
+                    template_vars["value"] = raw_result
+                    template_vars["json"] = None
+            else:
+                # 텍스트 형식인 경우
+                template_vars["value"] = raw_result
+                template_vars["json"] = None
             
             # 값 템플릿 처리
             if self._value_template:
@@ -130,11 +141,18 @@ class RunCommandSensor(SensorEntity):
                 except TemplateError as err:
                     _LOGGER.error("값 템플릿 렌더링 오류: %s", err)
                     self._state = None
+                    self._attributes["template_error"] = str(err)
             else:
-                self._state = self._raw_value
+                # 템플릿이 없으면 기본값 설정
+                if self._result_type == RESULT_TYPE_JSON and "json" in template_vars and template_vars["json"] is not None:
+                    self._state = json.dumps(template_vars["json"], ensure_ascii=False)
+                else:
+                    self._state = template_vars["value"]
+            
+            # 속성 초기화
+            self._attributes = {}
             
             # 속성 템플릿 처리
-            self._attributes = {}
             for attr_name, attr_template in self._attribute_templates.items():
                 try:
                     self._attributes[attr_name] = attr_template.async_render(template_vars)
@@ -142,13 +160,21 @@ class RunCommandSensor(SensorEntity):
                     _LOGGER.error("속성 템플릿 '%s' 렌더링 오류: %s", attr_name, err)
                     self._attributes[attr_name] = None
             
-            # JSON 값만 속성에 추가 (raw_value는 제거)
-            if self._json_value is not None:
-                self._attributes["json_value"] = self._json_value
+            # 마지막 업데이트 시간 추가
+            self._attributes["last_update"] = self._last_update.isoformat()
+            
+            # 에러 속성 제거 (성공 시)
+            if "last_error" in self._attributes:
+                del self._attributes["last_error"]
+            if "template_error" in self._attributes:
+                del self._attributes["template_error"]
                 
         except Exception as err:
             _LOGGER.error("센서 업데이트 중 오류: %s", err)
             self._state = None
+            self._attributes["last_error"] = str(err)
+            self._last_update = dt_util.now()
+            self._attributes["last_update"] = self._last_update.isoformat()
 
     @property
     def state(self) -> Any:

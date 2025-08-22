@@ -19,3 +19,7 @@ RESULT_TYPE_JSON: Final = "json"
 DEFAULT_SCAN_INTERVAL: Final = 30
 DEFAULT_RESULT_TYPE: Final = RESULT_TYPE_TEXT
 DEFAULT_NAME: Final = "Run Command Sensor"
+
+# Attribute names
+ATTR_LAST_UPDATE: Final = "last_update"
+ATTR_LAST_ERROR: Final = "last_error"

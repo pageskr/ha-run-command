@@ -49,8 +49,18 @@
 ### 템플릿 변수
 
 값 템플릿과 속성 템플릿에서 사용 가능한 변수:
-- `value`: 명령어 실행 결과 (문자열)
-- `json`: JSON으로 파싱된 결과 (결과 형식이 JSON인 경우)
+- **텍스트 형식 선택 시**:
+  - `value`: 명령어 실행 결과 전체 텍스트 (문자열)
+  - `json`: None
+- **JSON 형식 선택 시**:
+  - `value`: 명령어 실행 결과 원본 텍스트 (문자열)
+  - `json`: JSON으로 파싱된 객체 (파싱 실패 시 None)
+
+### 센서 속성
+
+- `last_update`: 마지막 명령어 실행 시간 (ISO 형식)
+- `last_error`: 마지막 오류 메시지 (오류 발생 시)
+- 사용자 정의 속성: 속성 템플릿으로 정의한 속성들
 
 ### 예제
 
@@ -65,13 +75,22 @@
 명령어: curl -s http://api.example.com/data
 결과 형식: JSON
 값 템플릿: {{ json.temperature }}
-속성 템플릿: {"humidity": "{{ json.humidity }}", "pressure": "{{ json.pressure }}"}
+속성 템플릿: {"humidity": "{{ json.humidity }}", "pressure": "{{ json.pressure }}", "raw_data": "{{ value }}"}
 ```
 
 #### 템플릿을 사용한 동적 명령어
 ```yaml
 명령어: echo "현재 온도: {{ states('sensor.temperature') }}°C"
+결과 형식: 텍스트
 값 템플릿: {{ value | regex_findall('온도: ([\d.]+)') | first }}
+```
+
+#### 시스템 상태 확인
+```yaml
+명령어: df -h / | tail -n 1
+결과 형식: 텍스트
+값 템플릿: {{ value.split()[4] }}
+속성 템플릿: {"total": "{{ value.split()[1] }}", "used": "{{ value.split()[2] }}", "available": "{{ value.split()[3] }}"}
 ```
 
 ## 라이센스
