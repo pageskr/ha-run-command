@@ -12,7 +12,8 @@
           "scan_interval": "Update interval (seconds)",
           "value_template": "Value template (optional)",
           "attribute_templates": "Attribute templates JSON (optional)",
-          "unit_of_measurement": "Unit of measurement (optional)"
+          "unit_of_measurement": "Unit of measurement (optional)",
+          "keep_last_value": "Keep last value"
         }
       }
     },
@@ -35,7 +36,8 @@
           "scan_interval": "Update interval (seconds)",
           "value_template": "Value template (optional)",
           "attribute_templates": "Attribute templates JSON (optional)",
-          "unit_of_measurement": "Unit of measurement (optional)"
+          "unit_of_measurement": "Unit of measurement (optional)",
+          "keep_last_value": "Keep last value"
         }
       }
     }

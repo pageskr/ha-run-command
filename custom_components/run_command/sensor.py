@@ -18,6 +18,7 @@ from homeassistant.util import dt as dt_util
 from .const import (
     CONF_ATTRIBUTE_TEMPLATES,
     CONF_COMMAND,
+    CONF_KEEP_LAST_VALUE,
     CONF_NAME,
     CONF_SCAN_INTERVAL,
     CONF_TIMEOUT,
@@ -73,6 +74,7 @@ class RunCommandSensor(SensorEntity):
             seconds=config.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         )
         self._timeout = config.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
+        self._keep_last_value = config.get(CONF_KEEP_LAST_VALUE, False)
         self._state: Any = None
         self._attributes: dict[str, Any] = {}
         self._last_update: datetime | None = None
@@ -94,6 +96,11 @@ class RunCommandSensor(SensorEntity):
 
     async def async_update(self) -> None:
         """Update the sensor."""
+        # 이전 상태 저장 (기존값 유지 옵션용)
+        previous_state = self._state
+        command_failed = False
+        template_failed = False
+        
         try:
             # 명령어 템플릿 렌더링
             command = self._command_template.async_render()
@@ -116,20 +123,30 @@ class RunCommandSensor(SensorEntity):
                 _LOGGER.error(
                     "명령어 실행 시간 초과 (%s초): %s", self._timeout, command
                 )
-                self._state = None
+                command_failed = True
                 self._attributes["last_error"] = f"Command timeout after {self._timeout} seconds"
                 self._last_update = dt_util.now()
                 self._attributes["last_update"] = self._last_update.isoformat()
+                
+                if self._keep_last_value:
+                    self._state = previous_state
+                else:
+                    self._state = None
                 return
             
             if proc.returncode != 0:
                 _LOGGER.error(
                     "명령어 실행 실패 (코드 %s): %s", proc.returncode, stderr.decode()
                 )
-                self._state = None
+                command_failed = True
                 self._attributes["last_error"] = stderr.decode().strip()
                 self._last_update = dt_util.now()
                 self._attributes["last_update"] = self._last_update.isoformat()
+                
+                if self._keep_last_value:
+                    self._state = previous_state
+                else:
+                    self._state = None
                 return
             
             # 업데이트 시간 기록
@@ -153,40 +170,62 @@ class RunCommandSensor(SensorEntity):
             # 값 템플릿 처리
             if self._value_template:
                 try:
-                    self._state = self._value_template.async_render(template_vars)
+                    rendered_value = self._value_template.async_render(template_vars)
+                    
+                    # 기존값 유지 옵션이 켜져있고, 특정 값들인 경우 이전 상태 유지
+                    if self._keep_last_value and str(rendered_value).lower() in ["false", "none", "unknown", "unavailable"]:
+                        self._state = previous_state
+                        self._attributes["template_result"] = str(rendered_value)
+                    else:
+                        self._state = rendered_value
+                        
                 except TemplateError as err:
                     _LOGGER.error("값 템플릿 렌더링 오류: %s", err)
-                    self._state = None
+                    template_failed = True
                     self._attributes["template_error"] = str(err)
+                    
+                    if self._keep_last_value:
+                        self._state = previous_state
+                    else:
+                        self._state = None
             else:
                 self._state = raw_result
             
             # 속성 초기화
-            self._attributes = {}
+            new_attributes = {}
             
             # 속성 템플릿 처리
             for attr_name, attr_template in self._attribute_templates.items():
                 try:
-                    self._attributes[attr_name] = attr_template.async_render(template_vars)
+                    new_attributes[attr_name] = attr_template.async_render(template_vars)
                 except TemplateError as err:
                     _LOGGER.error("속성 템플릿 '%s' 렌더링 오류: %s", attr_name, err)
-                    self._attributes[attr_name] = None
+                    new_attributes[attr_name] = None
+            
+            # 속성 업데이트
+            self._attributes = new_attributes
             
             # 마지막 업데이트 시간 추가
             self._attributes["last_update"] = self._last_update.isoformat()
             
-            # 에러 속성 제거 (성공 시)
-            if "last_error" in self._attributes:
+            # 에러 속성 관리
+            if not command_failed and "last_error" in self._attributes:
                 del self._attributes["last_error"]
-            if "template_error" in self._attributes:
+            if not template_failed and "template_error" in self._attributes:
                 del self._attributes["template_error"]
+            if not template_failed and "template_result" in self._attributes:
+                del self._attributes["template_result"]
                 
         except Exception as err:
             _LOGGER.error("센서 업데이트 중 오류: %s", err)
-            self._state = None
             self._attributes["last_error"] = str(err)
             self._last_update = dt_util.now()
             self._attributes["last_update"] = self._last_update.isoformat()
+            
+            if self._keep_last_value:
+                self._state = previous_state
+            else:
+                self._state = None
 
     @property
     def state(self) -> Any:

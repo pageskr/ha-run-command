@@ -15,12 +15,13 @@
 - 센서 설정 수정 기능
 - 측정 단위 설정
 - 멀티라인 코드 에디터 지원
+- 기존값 유지 옵션 (오류 발생 시 이전 값 유지)
 
 ## 설치
 
 ### HACS를 통한 설치 (권장)
 
-1. HACS에서 사용자 정의 저장소로 추가: `https://github.com/pages-kr/ha-run-command`
+1. HACS에서 사용자 정의 저장소로 추가: `https://github.com/pageskr/ha-run-command`
 2. "Run Command" 통합 검색 후 설치
 3. Home Assistant 재시작
 
@@ -42,6 +43,7 @@
    - **값 템플릿**: 센서 상태값을 만들기 위한 템플릿 (선택사항)
    - **속성 템플릿**: 추가 속성을 만들기 위한 JSON 형식의 템플릿 (선택사항)
    - **측정 단위**: 센서의 측정 단위 (선택사항)
+   - **기존값 유지**: 오류 발생 시 이전 값 유지 여부
 
 ### 센서 설정 수정
 
@@ -59,7 +61,17 @@
 
 - `last_update`: 마지막 명령어 실행 시간 (ISO 형식)
 - `last_error`: 마지막 오류 메시지 (오류 발생 시)
+- `template_error`: 템플릿 렌더링 오류 메시지 (템플릿 오류 시)
+- `template_result`: 템플릿 결과가 false/none/unknown/unavailable인 경우 표시
 - 사용자 정의 속성: 속성 템플릿으로 정의한 속성들
+
+### 기존값 유지 기능
+
+"기존값 유지" 옵션을 활성화하면:
+- 명령어 실행 실패 시 센서 값이 이전 값으로 유지됨
+- 값 템플릿 결과가 `false`, `none`, `unknown`, `unavailable`인 경우 이전 값 유지
+- 템플릿 렌더링 오류 시 이전 값 유지
+- 속성값들은 "기존값 유지" 옵션과 무관하게 항상 업데이트됨
 
 ### 예제
 
@@ -99,6 +111,15 @@
 실행 제한 시간: 300
 실행 주기: 3600
 ```
+
+#### 기존값 유지 예제
+```yaml
+명령어: curl -s --max-time 5 http://api.example.com/status
+값 템플릿: {{ value_json.status if value_json else "unknown" }}
+기존값 유지: 체크
+측정 단위: status
+```
+위 설정에서 API 호출이 실패하거나 "unknown"을 반환하면 센서의 이전 상태값이 유지됩니다.
 
 ## 라이센스
 

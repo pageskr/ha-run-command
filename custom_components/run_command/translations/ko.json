@@ -12,7 +12,8 @@
           "scan_interval": "실행 주기 (초)",
           "value_template": "값 템플릿 (선택사항)",
           "attribute_templates": "속성 템플릿 JSON (선택사항)",
-          "unit_of_measurement": "측정 단위 (선택사항)"
+          "unit_of_measurement": "측정 단위 (선택사항)",
+          "keep_last_value": "기존값 유지"
         }
       }
     },
@@ -35,7 +36,8 @@
           "scan_interval": "실행 주기 (초)",
           "value_template": "값 템플릿 (선택사항)",
           "attribute_templates": "속성 템플릿 JSON (선택사항)",
-          "unit_of_measurement": "측정 단위 (선택사항)"
+          "unit_of_measurement": "측정 단위 (선택사항)",
+          "keep_last_value": "기존값 유지"
         }
       }
     }

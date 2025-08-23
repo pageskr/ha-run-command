@@ -16,6 +16,7 @@ from homeassistant.helpers import selector
 from .const import (
     CONF_ATTRIBUTE_TEMPLATES,
     CONF_COMMAND,
+    CONF_KEEP_LAST_VALUE,
     CONF_NAME,
     CONF_SCAN_INTERVAL,
     CONF_TIMEOUT,
@@ -123,6 +124,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     )
                 ),
                 vol.Optional(CONF_UNIT_OF_MEASUREMENT, default=""): str,
+                vol.Optional(CONF_KEEP_LAST_VALUE, default=False): bool,
             }
         )
 
@@ -258,6 +260,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     CONF_UNIT_OF_MEASUREMENT,
                     default=current_data.get(CONF_UNIT_OF_MEASUREMENT, "")
                 ): str,
+                vol.Optional(
+                    CONF_KEEP_LAST_VALUE,
+                    default=current_data.get(CONF_KEEP_LAST_VALUE, False)
+                ): bool,
             }
         )
 
