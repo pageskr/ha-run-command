@@ -9,10 +9,12 @@
 - 웹 UI를 통한 간편한 센서 생성
 - Jinja2 템플릿을 사용한 동적 명령어 실행
 - 실행 주기 설정 가능
-- 텍스트/JSON 결과 형식 지원
+- 실행 제한 시간 설정 (최대 10분)
 - 값 템플릿을 통한 결과 가공
 - 속성 템플릿을 통한 커스텀 속성 생성
 - 센서 설정 수정 기능
+- 측정 단위 설정
+- 멀티라인 코드 에디터 지원
 
 ## 설치
 
@@ -35,10 +37,11 @@
 1. 통합 추가 시 다음 정보를 입력합니다:
    - **센서 이름**: 생성될 센서의 이름
    - **실행할 명령어**: 실행할 시스템 명령어 (Jinja2 템플릿 지원)
+   - **실행 제한 시간**: 명령어 실행 최대 대기 시간 (1-600초, 기본값: 60초)
    - **실행 주기**: 명령어 실행 간격 (초 단위)
-   - **결과 형식**: 텍스트 또는 JSON
    - **값 템플릿**: 센서 상태값을 만들기 위한 템플릿 (선택사항)
    - **속성 템플릿**: 추가 속성을 만들기 위한 JSON 형식의 템플릿 (선택사항)
+   - **측정 단위**: 센서의 측정 단위 (선택사항)
 
 ### 센서 설정 수정
 
@@ -49,12 +52,8 @@
 ### 템플릿 변수
 
 값 템플릿과 속성 템플릿에서 사용 가능한 변수:
-- **텍스트 형식 선택 시**:
-  - `value`: 명령어 실행 결과 전체 텍스트 (문자열)
-  - `json`: None
-- **JSON 형식 선택 시**:
-  - `value`: 명령어 실행 결과 원본 텍스트 (문자열)
-  - `json`: JSON으로 파싱된 객체 (파싱 실패 시 None)
+- `value`: 명령어 실행 결과 전체 텍스트 (문자열)
+- `value_json`: JSON으로 파싱된 객체 (JSON 형식이 아닌 경우 None)
 
 ### 센서 속성
 
@@ -68,29 +67,37 @@
 ```yaml
 명령어: cat /proc/loadavg
 값 템플릿: {{ value.split()[0] }}
+측정 단위: load
 ```
 
 #### JSON 결과 처리
 ```yaml
 명령어: curl -s http://api.example.com/data
-결과 형식: JSON
-값 템플릿: {{ json.temperature }}
-속성 템플릿: {"humidity": "{{ json.humidity }}", "pressure": "{{ json.pressure }}", "raw_data": "{{ value }}"}
+값 템플릿: {{ value_json.temperature }}
+속성 템플릿: {"humidity": "{{ value_json.humidity }}", "pressure": "{{ value_json.pressure }}", "raw_data": "{{ value }}"}
+측정 단위: °C
 ```
 
 #### 템플릿을 사용한 동적 명령어
 ```yaml
 명령어: echo "현재 온도: {{ states('sensor.temperature') }}°C"
-결과 형식: 텍스트
 값 템플릿: {{ value | regex_findall('온도: ([\d.]+)') | first }}
+측정 단위: °C
 ```
 
 #### 시스템 상태 확인
 ```yaml
 명령어: df -h / | tail -n 1
-결과 형식: 텍스트
 값 템플릿: {{ value.split()[4] }}
 속성 템플릿: {"total": "{{ value.split()[1] }}", "used": "{{ value.split()[2] }}", "available": "{{ value.split()[3] }}"}
+측정 단위: %
+```
+
+#### 장시간 실행 명령어
+```yaml
+명령어: /path/to/long-running-script.sh
+실행 제한 시간: 300
+실행 주기: 3600
 ```
 
 ## 라이센스

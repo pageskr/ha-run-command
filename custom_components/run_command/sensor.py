@@ -19,13 +19,13 @@ from .const import (
     CONF_ATTRIBUTE_TEMPLATES,
     CONF_COMMAND,
     CONF_NAME,
-    CONF_RESULT_TYPE,
     CONF_SCAN_INTERVAL,
+    CONF_TIMEOUT,
+    CONF_UNIT_OF_MEASUREMENT,
     CONF_VALUE_TEMPLATE,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_TIMEOUT,
     DOMAIN,
-    RESULT_TYPE_JSON,
-    RESULT_TYPE_TEXT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -54,6 +54,12 @@ class RunCommandSensor(SensorEntity):
         self._config = config
         self._attr_name = config[CONF_NAME]
         self._attr_unique_id = f"{DOMAIN}_{entry_id}"
+        
+        # 측정 단위 설정
+        unit = config.get(CONF_UNIT_OF_MEASUREMENT, "")
+        if unit:
+            self._attr_unit_of_measurement = unit
+        
         self._command_template = Template(config[CONF_COMMAND], hass)
         self._value_template = None
         if config.get(CONF_VALUE_TEMPLATE):
@@ -66,7 +72,7 @@ class RunCommandSensor(SensorEntity):
         self._scan_interval = timedelta(
             seconds=config.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         )
-        self._result_type = config.get(CONF_RESULT_TYPE, RESULT_TYPE_TEXT)
+        self._timeout = config.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
         self._state: Any = None
         self._attributes: dict[str, Any] = {}
         self._last_update: datetime | None = None
@@ -92,13 +98,29 @@ class RunCommandSensor(SensorEntity):
             # 명령어 템플릿 렌더링
             command = self._command_template.async_render()
             
-            # 명령어 실행
+            # 명령어 실행 (타임아웃 설정)
             proc = await asyncio.create_subprocess_shell(
                 command,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout, stderr = await proc.communicate()
+            
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    proc.communicate(), 
+                    timeout=self._timeout
+                )
+            except asyncio.TimeoutError:
+                proc.kill()
+                await proc.wait()
+                _LOGGER.error(
+                    "명령어 실행 시간 초과 (%s초): %s", self._timeout, command
+                )
+                self._state = None
+                self._attributes["last_error"] = f"Command timeout after {self._timeout} seconds"
+                self._last_update = dt_util.now()
+                self._attributes["last_update"] = self._last_update.isoformat()
+                return
             
             if proc.returncode != 0:
                 _LOGGER.error(
@@ -117,22 +139,16 @@ class RunCommandSensor(SensorEntity):
             raw_result = stdout.decode().strip()
             
             # 템플릿 변수 준비
-            template_vars = {}
+            template_vars = {
+                "value": raw_result
+            }
             
-            if self._result_type == RESULT_TYPE_JSON:
-                # JSON 형식인 경우
-                try:
-                    json_data = json.loads(raw_result)
-                    template_vars["json"] = json_data
-                    template_vars["value"] = raw_result  # JSON 문자열도 value에 포함
-                except json.JSONDecodeError:
-                    _LOGGER.warning("JSON 파싱 실패, 텍스트로 처리: %s", raw_result)
-                    template_vars["value"] = raw_result
-                    template_vars["json"] = None
-            else:
-                # 텍스트 형식인 경우
-                template_vars["value"] = raw_result
-                template_vars["json"] = None
+            # JSON 파싱 시도
+            try:
+                json_data = json.loads(raw_result)
+                template_vars["value_json"] = json_data
+            except json.JSONDecodeError:
+                template_vars["value_json"] = None
             
             # 값 템플릿 처리
             if self._value_template:
@@ -143,11 +159,7 @@ class RunCommandSensor(SensorEntity):
                     self._state = None
                     self._attributes["template_error"] = str(err)
             else:
-                # 템플릿이 없으면 기본값 설정
-                if self._result_type == RESULT_TYPE_JSON and "json" in template_vars and template_vars["json"] is not None:
-                    self._state = json.dumps(template_vars["json"], ensure_ascii=False)
-                else:
-                    self._state = template_vars["value"]
+                self._state = raw_result
             
             # 속성 초기화
             self._attributes = {}

@@ -6,19 +6,19 @@ DOMAIN: Final = "run_command"
 # Configuration keys
 CONF_COMMAND: Final = "command"
 CONF_SCAN_INTERVAL: Final = "scan_interval"
-CONF_RESULT_TYPE: Final = "result_type"
 CONF_VALUE_TEMPLATE: Final = "value_template"
 CONF_ATTRIBUTE_TEMPLATES: Final = "attribute_templates"
 CONF_NAME: Final = "name"
+CONF_TIMEOUT: Final = "timeout"
+CONF_UNIT_OF_MEASUREMENT: Final = "unit_of_measurement"
 
-# Result types
-RESULT_TYPE_TEXT: Final = "text"
-RESULT_TYPE_JSON: Final = "json"
+
 
 # Default values
 DEFAULT_SCAN_INTERVAL: Final = 30
-DEFAULT_RESULT_TYPE: Final = RESULT_TYPE_TEXT
 DEFAULT_NAME: Final = "Run Command Sensor"
+DEFAULT_TIMEOUT: Final = 60
+MAX_TIMEOUT: Final = 600
 
 # Attribute names
 ATTR_LAST_UPDATE: Final = "last_update"

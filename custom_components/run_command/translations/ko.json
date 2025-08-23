@@ -8,10 +8,11 @@
         "data": {
           "name": "센서 이름",
           "command": "실행할 명령어 (Jinja2 템플릿 지원)",
+          "timeout": "실행 제한 시간 (초)",
           "scan_interval": "실행 주기 (초)",
-          "result_type": "결과 형식",
           "value_template": "값 템플릿 (선택사항)",
-          "attribute_templates": "속성 템플릿 JSON (선택사항)"
+          "attribute_templates": "속성 템플릿 JSON (선택사항)",
+          "unit_of_measurement": "측정 단위 (선택사항)"
         }
       }
     },
@@ -30,19 +31,12 @@
         "data": {
           "name": "센서 이름",
           "command": "실행할 명령어 (Jinja2 템플릿 지원)",
+          "timeout": "실행 제한 시간 (초)",
           "scan_interval": "실행 주기 (초)",
-          "result_type": "결과 형식",
           "value_template": "값 템플릿 (선택사항)",
-          "attribute_templates": "속성 템플릿 JSON (선택사항)"
+          "attribute_templates": "속성 템플릿 JSON (선택사항)",
+          "unit_of_measurement": "측정 단위 (선택사항)"
         }
-      }
-    }
-  },
-  "selector": {
-    "result_type": {
-      "options": {
-        "text": "텍스트",
-        "json": "JSON"
       }
     }
   }

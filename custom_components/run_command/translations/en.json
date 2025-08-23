@@ -8,10 +8,11 @@
         "data": {
           "name": "Sensor name",
           "command": "Command to execute (Jinja2 template supported)",
+          "timeout": "Execution timeout (seconds)",
           "scan_interval": "Update interval (seconds)",
-          "result_type": "Result format",
           "value_template": "Value template (optional)",
-          "attribute_templates": "Attribute templates JSON (optional)"
+          "attribute_templates": "Attribute templates JSON (optional)",
+          "unit_of_measurement": "Unit of measurement (optional)"
         }
       }
     },
@@ -30,19 +31,12 @@
         "data": {
           "name": "Sensor name",
           "command": "Command to execute (Jinja2 template supported)",
+          "timeout": "Execution timeout (seconds)",
           "scan_interval": "Update interval (seconds)",
-          "result_type": "Result format",
           "value_template": "Value template (optional)",
-          "attribute_templates": "Attribute templates JSON (optional)"
+          "attribute_templates": "Attribute templates JSON (optional)",
+          "unit_of_measurement": "Unit of measurement (optional)"
         }
-      }
-    }
-  },
-  "selector": {
-    "result_type": {
-      "options": {
-        "text": "Text",
-        "json": "JSON"
       }
     }
   }

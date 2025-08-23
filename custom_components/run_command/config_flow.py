@@ -11,20 +11,21 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import selector
 
 from .const import (
     CONF_ATTRIBUTE_TEMPLATES,
     CONF_COMMAND,
     CONF_NAME,
-    CONF_RESULT_TYPE,
     CONF_SCAN_INTERVAL,
+    CONF_TIMEOUT,
+    CONF_UNIT_OF_MEASUREMENT,
     CONF_VALUE_TEMPLATE,
     DEFAULT_NAME,
-    DEFAULT_RESULT_TYPE,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_TIMEOUT,
     DOMAIN,
-    RESULT_TYPE_JSON,
-    RESULT_TYPE_TEXT,
+    MAX_TIMEOUT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -97,15 +98,31 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema(
             {
                 vol.Required(CONF_NAME, default=DEFAULT_NAME): str,
-                vol.Required(CONF_COMMAND): str,
+                vol.Required(CONF_COMMAND): selector.TextSelector(
+                    selector.TextSelectorConfig(
+                        multiline=True,
+                        type=selector.TextSelectorType.TEXT,
+                    )
+                ),
+                vol.Optional(
+                    CONF_TIMEOUT, default=DEFAULT_TIMEOUT
+                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=MAX_TIMEOUT)),
                 vol.Optional(
                     CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL
                 ): vol.All(vol.Coerce(int), vol.Range(min=1)),
-                vol.Optional(CONF_RESULT_TYPE, default=DEFAULT_RESULT_TYPE): vol.In(
-                    [RESULT_TYPE_TEXT, RESULT_TYPE_JSON]
+                vol.Optional(CONF_VALUE_TEMPLATE, default=""): selector.TextSelector(
+                    selector.TextSelectorConfig(
+                        multiline=True,
+                        type=selector.TextSelectorType.TEXT,
+                    )
                 ),
-                vol.Optional(CONF_VALUE_TEMPLATE, default=""): str,
-                vol.Optional(CONF_ATTRIBUTE_TEMPLATES, default=""): str,
+                vol.Optional(CONF_ATTRIBUTE_TEMPLATES, default=""): selector.TextSelector(
+                    selector.TextSelectorConfig(
+                        multiline=True,
+                        type=selector.TextSelectorType.TEXT,
+                    )
+                ),
+                vol.Optional(CONF_UNIT_OF_MEASUREMENT, default=""): str,
             }
         )
 
@@ -205,22 +222,41 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(
                     CONF_COMMAND,
                     default=current_data.get(CONF_COMMAND, "")
-                ): str,
+                ): selector.TextSelector(
+                    selector.TextSelectorConfig(
+                        multiline=True,
+                        type=selector.TextSelectorType.TEXT,
+                    )
+                ),
+                vol.Optional(
+                    CONF_TIMEOUT,
+                    default=current_data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
+                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=MAX_TIMEOUT)),
                 vol.Optional(
                     CONF_SCAN_INTERVAL,
                     default=current_data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
                 ): vol.All(vol.Coerce(int), vol.Range(min=1)),
                 vol.Optional(
-                    CONF_RESULT_TYPE,
-                    default=current_data.get(CONF_RESULT_TYPE, DEFAULT_RESULT_TYPE)
-                ): vol.In([RESULT_TYPE_TEXT, RESULT_TYPE_JSON]),
-                vol.Optional(
                     CONF_VALUE_TEMPLATE,
                     default=current_data.get(CONF_VALUE_TEMPLATE, "")
-                ): str,
+                ): selector.TextSelector(
+                    selector.TextSelectorConfig(
+                        multiline=True,
+                        type=selector.TextSelectorType.TEXT,
+                    )
+                ),
                 vol.Optional(
                     CONF_ATTRIBUTE_TEMPLATES,
                     default=attr_templates_str
+                ): selector.TextSelector(
+                    selector.TextSelectorConfig(
+                        multiline=True,
+                        type=selector.TextSelectorType.TEXT,
+                    )
+                ),
+                vol.Optional(
+                    CONF_UNIT_OF_MEASUREMENT,
+                    default=current_data.get(CONF_UNIT_OF_MEASUREMENT, "")
                 ): str,
             }
         )
