@@ -13,6 +13,7 @@
           "value_template": "Value template (optional)",
           "attribute_templates": "Attribute templates JSON (optional)",
           "unit_of_measurement": "Unit of measurement (optional)",
+          "remove_unit": "Remove unit of measurement and statistics",
           "keep_last_value": "Keep last value"
         }
       }
@@ -37,6 +38,7 @@
           "value_template": "Value template (optional)",
           "attribute_templates": "Attribute templates JSON (optional)",
           "unit_of_measurement": "Unit of measurement (optional)",
+          "remove_unit": "Remove unit of measurement and statistics",
           "keep_last_value": "Keep last value"
         }
       }

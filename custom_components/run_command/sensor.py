@@ -57,8 +57,11 @@ class RunCommandSensor(SensorEntity):
         self._attr_unique_id = f"{DOMAIN}_{entry_id}"
         
         # 측정 단위 설정
-        unit = config.get(CONF_UNIT_OF_MEASUREMENT, "")
-        if unit:
+        unit = config.get(CONF_UNIT_OF_MEASUREMENT)
+        if unit is None or unit == "":
+            # None이거나 빈 문자열일 경우 속성 제거
+            self._attr_unit_of_measurement = None
+        else:
             self._attr_unit_of_measurement = unit
         
         self._command_template = Template(config[CONF_COMMAND], hass)
@@ -152,15 +155,15 @@ class RunCommandSensor(SensorEntity):
             # 업데이트 시간 기록
             self._last_update = dt_util.now()
             
-            # 결과 처리
+            # 결과 처리 - value는 항상 텍스트 문자열로 저장
             raw_result = stdout.decode().strip()
             
-            # 템플릿 변수 준비
+            # 템플릿 변수 준비 - value는 항상 문자열 그대로
             template_vars = {
-                "value": raw_result
+                "value": raw_result  # 원본 텍스트 그대로 유지
             }
             
-            # JSON 파싱 시도
+            # JSON 파싱 시도 - value_json에만 파싱된 값 저장
             try:
                 json_data = json.loads(raw_result)
                 template_vars["value_json"] = json_data

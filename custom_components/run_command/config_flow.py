@@ -22,6 +22,7 @@ from .const import (
     CONF_TIMEOUT,
     CONF_UNIT_OF_MEASUREMENT,
     CONF_VALUE_TEMPLATE,
+    CONF_REMOVE_UNIT,
     DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TIMEOUT,
@@ -99,31 +100,17 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema(
             {
                 vol.Required(CONF_NAME, default=DEFAULT_NAME): str,
-                vol.Required(CONF_COMMAND): selector.TextSelector(
-                    selector.TextSelectorConfig(
-                        multiline=True,
-                        type=selector.TextSelectorType.TEXT,
-                    )
-                ),
+                vol.Required(CONF_COMMAND): selector.TemplateSelector(),  # 코드 에디터로 표시
                 vol.Optional(
                     CONF_TIMEOUT, default=DEFAULT_TIMEOUT
                 ): vol.All(vol.Coerce(int), vol.Range(min=1, max=MAX_TIMEOUT)),
                 vol.Optional(
                     CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL
                 ): vol.All(vol.Coerce(int), vol.Range(min=1)),
-                vol.Optional(CONF_VALUE_TEMPLATE, default=""): selector.TextSelector(
-                    selector.TextSelectorConfig(
-                        multiline=True,
-                        type=selector.TextSelectorType.TEXT,
-                    )
-                ),
-                vol.Optional(CONF_ATTRIBUTE_TEMPLATES, default=""): selector.TextSelector(
-                    selector.TextSelectorConfig(
-                        multiline=True,
-                        type=selector.TextSelectorType.TEXT,
-                    )
-                ),
+                vol.Optional(CONF_VALUE_TEMPLATE, default=""): selector.TemplateSelector(),  # 코드 에디터로 표시
+                vol.Optional(CONF_ATTRIBUTE_TEMPLATES, default=""): selector.TemplateSelector(),  # 코드 에디터로 표시
                 vol.Optional(CONF_UNIT_OF_MEASUREMENT, default=""): str,
+                vol.Optional(CONF_REMOVE_UNIT, default=False): bool,
                 vol.Optional(CONF_KEEP_LAST_VALUE, default=False): bool,
             }
         )
@@ -164,6 +151,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         user_input[CONF_ATTRIBUTE_TEMPLATES]
                     )
 
+                # 측정 단위 제거 처리
+                if user_input.get(CONF_REMOVE_UNIT, False):
+                    user_input[CONF_UNIT_OF_MEASUREMENT] = None
+                    user_input.pop(CONF_REMOVE_UNIT, None)  # 체크박스 값은 제거
+                elif CONF_REMOVE_UNIT in user_input:
+                    user_input.pop(CONF_REMOVE_UNIT)  # 체크박스 값은 제거
+                
                 # 기존 데이터와 병합
                 new_data = {**self.config_entry.data, **user_input}
                 
@@ -224,12 +218,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(
                     CONF_COMMAND,
                     default=current_data.get(CONF_COMMAND, "")
-                ): selector.TextSelector(
-                    selector.TextSelectorConfig(
-                        multiline=True,
-                        type=selector.TextSelectorType.TEXT,
-                    )
-                ),
+                ): selector.TemplateSelector(),  # 코드 에디터로 표시
                 vol.Optional(
                     CONF_TIMEOUT,
                     default=current_data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
@@ -241,25 +230,19 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_VALUE_TEMPLATE,
                     default=current_data.get(CONF_VALUE_TEMPLATE, "")
-                ): selector.TextSelector(
-                    selector.TextSelectorConfig(
-                        multiline=True,
-                        type=selector.TextSelectorType.TEXT,
-                    )
-                ),
+                ): selector.TemplateSelector(),  # 코드 에디터로 표시
                 vol.Optional(
                     CONF_ATTRIBUTE_TEMPLATES,
                     default=attr_templates_str
-                ): selector.TextSelector(
-                    selector.TextSelectorConfig(
-                        multiline=True,
-                        type=selector.TextSelectorType.TEXT,
-                    )
-                ),
+                ): selector.TemplateSelector(),  # 코드 에디터로 표시
                 vol.Optional(
                     CONF_UNIT_OF_MEASUREMENT,
                     default=current_data.get(CONF_UNIT_OF_MEASUREMENT, "")
                 ): str,
+                vol.Optional(
+                    CONF_REMOVE_UNIT,
+                    default=False
+                ): bool,
                 vol.Optional(
                     CONF_KEEP_LAST_VALUE,
                     default=current_data.get(CONF_KEEP_LAST_VALUE, False)

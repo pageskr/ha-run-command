@@ -13,6 +13,7 @@
           "value_template": "값 템플릿 (선택사항)",
           "attribute_templates": "속성 템플릿 JSON (선택사항)",
           "unit_of_measurement": "측정 단위 (선택사항)",
+          "remove_unit": "측정 단위 및 통계 제거",
           "keep_last_value": "기존값 유지"
         }
       }
@@ -37,6 +38,7 @@
           "value_template": "값 템플릿 (선택사항)",
           "attribute_templates": "속성 템플릿 JSON (선택사항)",
           "unit_of_measurement": "측정 단위 (선택사항)",
+          "remove_unit": "측정 단위 및 통계 제거",
           "keep_last_value": "기존값 유지"
         }
       }

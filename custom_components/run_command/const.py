@@ -12,6 +12,7 @@ CONF_NAME: Final = "name"
 CONF_TIMEOUT: Final = "timeout"
 CONF_UNIT_OF_MEASUREMENT: Final = "unit_of_measurement"
 CONF_KEEP_LAST_VALUE: Final = "keep_last_value"
+CONF_REMOVE_UNIT: Final = "remove_unit"
 
 
 
