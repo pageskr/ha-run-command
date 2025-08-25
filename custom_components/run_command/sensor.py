@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import TemplateError
@@ -92,7 +92,6 @@ class RunCommandSensor(SensorEntity):
         self._config = config
         self._attr_name = config[CONF_NAME]
         self._attr_unique_id = f"{DOMAIN}_{entry_id}"
-        self._attr_has_entity_name = True
         
         # 측정 단위 설정
         self._update_unit_of_measurement(config)
@@ -120,21 +119,14 @@ class RunCommandSensor(SensorEntity):
         unit = config.get(CONF_UNIT_OF_MEASUREMENT)
         if unit is None or unit == "":
             # None이거나 빈 문자열일 경우 속성 제거
-            self._attr_native_unit_of_measurement = None
-            if hasattr(self, '_attr_unit_of_measurement'):
-                delattr(self, '_attr_unit_of_measurement')
+            self._attr_unit_of_measurement = None
         else:
-            self._attr_native_unit_of_measurement = unit
+            self._attr_unit_of_measurement = unit
     
     @property
     def unique_id(self) -> str:
         """Return a unique ID."""
         return self._attr_unique_id
-    
-    @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return self._attr_name
 
     @property
     def should_poll(self) -> bool:
@@ -285,7 +277,7 @@ class RunCommandSensor(SensorEntity):
                 self._state = None
 
     @property
-    def native_value(self) -> Any:
+    def state(self) -> Any:
         """Return the state of the sensor."""
         return self._state
 
