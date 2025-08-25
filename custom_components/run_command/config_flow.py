@@ -62,11 +62,24 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                # 속성 템플릿 유효성 검사
-                if CONF_ATTRIBUTE_TEMPLATES in user_input:
+                # 템플릿 선택자는 문자열을 반환하므로 변환 필요 없음
+                # CONF_COMMAND는 문자열로 저장
+                # CONF_VALUE_TEMPLATE는 문자열로 저장
+                
+                # 속성 템플릿 유효성 검사 (JSON 문자열을 딕셔너리로 변환)
+                if CONF_ATTRIBUTE_TEMPLATES in user_input and user_input[CONF_ATTRIBUTE_TEMPLATES]:
                     user_input[CONF_ATTRIBUTE_TEMPLATES] = validate_attribute_templates(
                         user_input[CONF_ATTRIBUTE_TEMPLATES]
                     )
+                else:
+                    user_input[CONF_ATTRIBUTE_TEMPLATES] = {}
+
+                # 측정 단위가 빈 문자열이면 None으로 변환
+                if user_input.get(CONF_UNIT_OF_MEASUREMENT) == "":
+                    user_input[CONF_UNIT_OF_MEASUREMENT] = None
+
+                # REMOVE_UNIT 체크박스 제거
+                user_input.pop(CONF_REMOVE_UNIT, None)
 
                 # 중복 이름 확인 및 고유 ID 생성
                 base_name = user_input[CONF_NAME]
@@ -100,15 +113,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema(
             {
                 vol.Required(CONF_NAME, default=DEFAULT_NAME): str,
-                vol.Required(CONF_COMMAND): selector.TemplateSelector(),  # 코드 에디터로 표시
+                vol.Required(CONF_COMMAND): selector.TemplateSelector(),
                 vol.Optional(
                     CONF_TIMEOUT, default=DEFAULT_TIMEOUT
                 ): vol.All(vol.Coerce(int), vol.Range(min=1, max=MAX_TIMEOUT)),
                 vol.Optional(
                     CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL
                 ): vol.All(vol.Coerce(int), vol.Range(min=1)),
-                vol.Optional(CONF_VALUE_TEMPLATE, default=""): selector.TemplateSelector(),  # 코드 에디터로 표시
-                vol.Optional(CONF_ATTRIBUTE_TEMPLATES, default=""): selector.TemplateSelector(),  # 코드 에디터로 표시
+                vol.Optional(CONF_VALUE_TEMPLATE, default=""): selector.TemplateSelector(),
+                vol.Optional(CONF_ATTRIBUTE_TEMPLATES, default=""): selector.TemplateSelector(),
                 vol.Optional(CONF_UNIT_OF_MEASUREMENT, default=""): str,
                 vol.Optional(CONF_REMOVE_UNIT, default=False): bool,
                 vol.Optional(CONF_KEEP_LAST_VALUE, default=False): bool,
@@ -145,11 +158,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         if user_input is not None:
             try:
-                # 속성 템플릿 유효성 검사
-                if CONF_ATTRIBUTE_TEMPLATES in user_input:
+                # 속성 템플릿 유효성 검사 (JSON 문자열을 딕셔너리로 변환)
+                if CONF_ATTRIBUTE_TEMPLATES in user_input and user_input[CONF_ATTRIBUTE_TEMPLATES]:
                     user_input[CONF_ATTRIBUTE_TEMPLATES] = validate_attribute_templates(
                         user_input[CONF_ATTRIBUTE_TEMPLATES]
                     )
+                else:
+                    user_input[CONF_ATTRIBUTE_TEMPLATES] = {}
 
                 # 측정 단위 제거 처리
                 if user_input.get(CONF_REMOVE_UNIT, False):
@@ -222,7 +237,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(
                     CONF_COMMAND,
                     default=current_data.get(CONF_COMMAND, "")
-                ): selector.TemplateSelector(),  # 코드 에디터로 표시
+                ): selector.TemplateSelector(),
                 vol.Optional(
                     CONF_TIMEOUT,
                     default=current_data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
@@ -234,14 +249,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_VALUE_TEMPLATE,
                     default=current_data.get(CONF_VALUE_TEMPLATE, "")
-                ): selector.TemplateSelector(),  # 코드 에디터로 표시
+                ): selector.TemplateSelector(),
                 vol.Optional(
                     CONF_ATTRIBUTE_TEMPLATES,
                     default=attr_templates_str
-                ): selector.TemplateSelector(),  # 코드 에디터로 표시
+                ): selector.TemplateSelector(),
                 vol.Optional(
                     CONF_UNIT_OF_MEASUREMENT,
-                    default=current_data.get(CONF_UNIT_OF_MEASUREMENT, "")
+                    default=current_data.get(CONF_UNIT_OF_MEASUREMENT, "") or ""
                 ): str,
                 vol.Optional(
                     CONF_REMOVE_UNIT,

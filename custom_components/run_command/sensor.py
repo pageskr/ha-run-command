@@ -7,9 +7,9 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import TemplateError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.template import Template
@@ -44,7 +44,8 @@ async def async_setup_entry(
     async_add_entities([sensor], update_before_add=True)
     
     # 설정 업데이트 시 센서 업데이트
-    async def handle_options_update(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    @callback
+    def handle_options_update(hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Handle options update."""
         new_config = hass.data[DOMAIN][entry.entry_id]
         
@@ -72,8 +73,8 @@ async def async_setup_entry(
         sensor._timeout = new_config.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
         sensor._keep_last_value = new_config.get(CONF_KEEP_LAST_VALUE, False)
         
-        # 상태 업데이트
-        await sensor.async_update_ha_state(True)
+        # 엔티티 레지스트리 업데이트로 상태 즉시 반영
+        sensor.async_write_ha_state()
     
     # 설정 업데이트 리스너 등록
     config_entry.async_on_unload(
@@ -91,6 +92,7 @@ class RunCommandSensor(SensorEntity):
         self._config = config
         self._attr_name = config[CONF_NAME]
         self._attr_unique_id = f"{DOMAIN}_{entry_id}"
+        self._attr_has_entity_name = True
         
         # 측정 단위 설정
         self._update_unit_of_measurement(config)
@@ -118,19 +120,21 @@ class RunCommandSensor(SensorEntity):
         unit = config.get(CONF_UNIT_OF_MEASUREMENT)
         if unit is None or unit == "":
             # None이거나 빈 문자열일 경우 속성 제거
-            self._attr_unit_of_measurement = None
+            self._attr_native_unit_of_measurement = None
+            if hasattr(self, '_attr_unit_of_measurement'):
+                delattr(self, '_attr_unit_of_measurement')
         else:
-            self._attr_unit_of_measurement = unit
-    
-    async def async_added_to_hass(self) -> None:
-        """Handle entity which will be added."""
-        # 엔티티가 추가될 때 설정 업데이트 확인
-        await super().async_added_to_hass()
+            self._attr_native_unit_of_measurement = unit
     
     @property
     def unique_id(self) -> str:
         """Return a unique ID."""
         return self._attr_unique_id
+    
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return self._attr_name
 
     @property
     def should_poll(self) -> bool:
@@ -281,7 +285,7 @@ class RunCommandSensor(SensorEntity):
                 self._state = None
 
     @property
-    def state(self) -> Any:
+    def native_value(self) -> Any:
         """Return the state of the sensor."""
         return self._state
 

@@ -40,7 +40,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_update_options(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Handle options update."""
     hass.data[DOMAIN][entry.entry_id] = entry.data
-    # async_reload를 제거하고 sensor.py에서 직접 처리
+    # sensor.py에서 직접 처리하므로 여기서는 데이터만 업데이트
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
