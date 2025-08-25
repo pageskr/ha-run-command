@@ -157,6 +157,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     user_input.pop(CONF_REMOVE_UNIT, None)  # 체크박스 값은 제거
                 elif CONF_REMOVE_UNIT in user_input:
                     user_input.pop(CONF_REMOVE_UNIT)  # 체크박스 값은 제거
+                    # 빈 문자열일 경우 None으로 변환
+                    if user_input.get(CONF_UNIT_OF_MEASUREMENT) == "":
+                        user_input[CONF_UNIT_OF_MEASUREMENT] = None
                 
                 # 기존 데이터와 병합
                 new_data = {**self.config_entry.data, **user_input}
@@ -198,13 +201,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # 현재 설정값을 기본값으로 사용
         current_data = self.config_entry.data
         
-        # 속성 템플릿을 JSON 문자열로 변환
+        # 속성 템플릿을 JSON 문자열로 변환 (멀티라인 유지)
         attr_templates_str = ""
         if current_data.get(CONF_ATTRIBUTE_TEMPLATES):
             try:
                 attr_templates_str = json.dumps(
                     current_data[CONF_ATTRIBUTE_TEMPLATES], 
-                    ensure_ascii=False
+                    ensure_ascii=False,
+                    indent=2  # 들여쓰기로 멀티라인 유지
                 )
             except Exception:
                 attr_templates_str = ""

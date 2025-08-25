@@ -40,8 +40,44 @@ async def async_setup_entry(
     """Set up Run Command sensor from a config entry."""
     config = hass.data[DOMAIN][config_entry.entry_id]
     
-    async_add_entities(
-        [RunCommandSensor(hass, config_entry.entry_id, config)], update_before_add=True
+    sensor = RunCommandSensor(hass, config_entry.entry_id, config)
+    async_add_entities([sensor], update_before_add=True)
+    
+    # 설정 업데이트 시 센서 업데이트
+    async def handle_options_update(hass: HomeAssistant, entry: ConfigEntry) -> None:
+        """Handle options update."""
+        new_config = hass.data[DOMAIN][entry.entry_id]
+        
+        # 센서 설정 업데이트
+        sensor._config = new_config
+        sensor._attr_name = new_config[CONF_NAME]
+        sensor._update_unit_of_measurement(new_config)
+        
+        # 템플릿 업데이트
+        sensor._command_template = Template(new_config[CONF_COMMAND], hass)
+        sensor._value_template = None
+        if new_config.get(CONF_VALUE_TEMPLATE):
+            sensor._value_template = Template(new_config[CONF_VALUE_TEMPLATE], hass)
+        
+        # 속성 템플릿 업데이트
+        sensor._attribute_templates = {}
+        if new_config.get(CONF_ATTRIBUTE_TEMPLATES):
+            for attr_name, attr_template in new_config[CONF_ATTRIBUTE_TEMPLATES].items():
+                sensor._attribute_templates[attr_name] = Template(attr_template, hass)
+        
+        # 기타 설정 업데이트
+        sensor._scan_interval = timedelta(
+            seconds=new_config.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        )
+        sensor._timeout = new_config.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
+        sensor._keep_last_value = new_config.get(CONF_KEEP_LAST_VALUE, False)
+        
+        # 상태 업데이트
+        await sensor.async_update_ha_state(True)
+    
+    # 설정 업데이트 리스너 등록
+    config_entry.async_on_unload(
+        config_entry.add_update_listener(handle_options_update)
     )
 
 
@@ -57,12 +93,7 @@ class RunCommandSensor(SensorEntity):
         self._attr_unique_id = f"{DOMAIN}_{entry_id}"
         
         # 측정 단위 설정
-        unit = config.get(CONF_UNIT_OF_MEASUREMENT)
-        if unit is None or unit == "":
-            # None이거나 빈 문자열일 경우 속성 제거
-            self._attr_unit_of_measurement = None
-        else:
-            self._attr_unit_of_measurement = unit
+        self._update_unit_of_measurement(config)
         
         self._command_template = Template(config[CONF_COMMAND], hass)
         self._value_template = None
@@ -81,6 +112,25 @@ class RunCommandSensor(SensorEntity):
         self._state: Any = None
         self._attributes: dict[str, Any] = {}
         self._last_update: datetime | None = None
+
+    def _update_unit_of_measurement(self, config: dict[str, Any]) -> None:
+        """Update unit of measurement from config."""
+        unit = config.get(CONF_UNIT_OF_MEASUREMENT)
+        if unit is None or unit == "":
+            # None이거나 빈 문자열일 경우 속성 제거
+            self._attr_unit_of_measurement = None
+        else:
+            self._attr_unit_of_measurement = unit
+    
+    async def async_added_to_hass(self) -> None:
+        """Handle entity which will be added."""
+        # 엔티티가 추가될 때 설정 업데이트 확인
+        await super().async_added_to_hass()
+    
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID."""
+        return self._attr_unique_id
 
     @property
     def should_poll(self) -> bool:
